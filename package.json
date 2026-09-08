@@ -1,0 +1,56 @@
+{
+    "name": "n8n-nodes-unopim",
+    "version": "1.0.0",
+    "description": "n8n node for UnoPim \u2014 the open-source PIM. Read and write the catalog, and trigger workflows on catalog changes.",
+    "license": "MIT",
+    "homepage": "https://unopim.com",
+    "keywords": [
+        "n8n-community-node-package",
+        "unopim",
+        "pim",
+        "product-information-management",
+        "catalog"
+    ],
+    "author": {
+        "name": "Webkul"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/unopim/n8n-nodes-unopim.git"
+    },
+    "engines": {
+        "node": ">=22"
+    },
+    "main": "index.js",
+    "scripts": {
+        "build": "n8n-node build && node scripts/copy-codex.mjs",
+        "dev": "n8n-node dev",
+        "lint": "n8n-node lint",
+        "lint:fix": "n8n-node lint --fix",
+        "release": "n8n-node release",
+        "prepublishOnly": "n8n-node prerelease",
+        "test": "npm run build && node --test \"test/**/*.test.ts\""
+    },
+    "files": [
+        "dist"
+    ],
+    "n8n": {
+        "n8nNodesApiVersion": 1,
+        "strict": true,
+        "credentials": [
+            "dist/credentials/UnoPimApi.credentials.js"
+        ],
+        "nodes": [
+            "dist/nodes/UnoPim/UnoPim.node.js",
+            "dist/nodes/UnoPimTrigger/UnoPimTrigger.node.js"
+        ]
+    },
+    "devDependencies": {
+        "@n8n/node-cli": "^0.23.0",
+        "eslint": "^9.39.4",
+        "typescript": "^5.9.3"
+    },
+    "peerDependencies": {
+        "n8n-workflow": "*"
+    }
+}

@@ -1,120 +1,130 @@
 # n8n-nodes-unopim
 
-n8n community nodes for [UnoPim](https://unopim.com) — connect an UnoPim PIM catalog to n8n workflows.
+n8n community nodes for [UnoPim](https://unopim.com), the open-source Product
+Information Management system.
 
-> Status: repository scaffold. No node code has been written yet. This README collects everything needed to build, test, publish and submit the package.
+Two nodes ship in this package:
 
-- npm package: `@unopim/n8n-nodes-unopim`
-- Repository: `github.com/unopim/n8n-nodes-unopim`
-- License: MIT
+| Node | What it does |
+|---|---|
+| **UnoPim** | Reads and writes the catalog — products, categories, attributes, families and settings |
+| **UnoPim Trigger** | Starts a workflow the moment the catalog changes |
 
-## Planned package contents
+[Installation](#installation) · [Credentials](#credentials) · [Operations](#operations) · [Trigger events](#trigger-events) · [Compatibility](#compatibility)
 
-| Node | Type | Purpose |
-| --- | --- | --- |
-| UnoPim | Action | CRUD over the full UnoPim REST v1 surface |
-| UnoPim Trigger | Trigger (webhook) | Receives events from the UnoPim Webhook package |
-| UnoPim API | Credential | OAuth 2.0 password grant against UnoPim Passport |
+## Installation
 
-## Authentication
+Follow the
+[community nodes installation guide](https://docs.n8n.io/integrations/community-nodes/installation/)
+and install `n8n-nodes-unopim`.
 
-UnoPim exposes Laravel Passport with the **password grant**. An API key is created in the admin panel (Settings → API Keys), which yields `client_id` and `client_secret`; the admin user's `username`/`password` complete the grant.
+The trigger node also needs the UnoPim side of the connector installed on your
+PIM. See [the connector package](https://github.com/unopim/unopim-n8n) for that
+half. The action node works against a stock UnoPim install with no extra
+package.
 
+## Credentials
+
+UnoPim authenticates with Passport's password grant.
+
+1. In UnoPim, open **Configuration → Integrations → API Keys** and create a key.
+2. Copy four values from that row: Client ID, Client Secret, API Username and
+   API Password.
+3. In n8n, create a **UnoPim API** credential and paste them, along with your
+   UnoPim URL.
+
+> The **Username** is the value UnoPim generated, in the form
+> `integration+<id>@api.local`. It is not your own admin login. An admin login
+> is accepted by the form but fails every request afterwards.
+
+## Operations
+
+The UnoPim node covers eleven resources. Every resource supports **Get Many**,
+**Get**, **Create**, **Update** and **Delete**; most also support
+**Update Partially**, which sends a PATCH rather than replacing the record.
+
+| Resource | Endpoint |
+|---|---|
+| Product | `/products` |
+| Configurable Product | `/configurable-products` |
+| Category | `/categories` |
+| Attribute | `/attributes` |
+| Attribute Group | `/attribute-groups` |
+| Attribute Family | `/families` |
+| Category Field | `/category-fields` |
+| Association Type | `/association-types` |
+| Locale | `/locales` |
+| Channel | `/channels` |
+| Currency | `/currencies` |
+
+**Get Many** takes a **Return All** toggle. UnoPim caps a page at 100 rows, so
+returning everything walks the pages for you — using keyset pagination, which
+stays fast on a large catalog where page offsets do not.
+
+You can narrow a listing with UnoPim's own filter syntax:
+
+```json
+{ "sku": [{ "operator": "IN", "value": ["SHIRT-01", "SHIRT-02"] }] }
 ```
-POST {baseUrl}/oauth/token
-{
-  "grant_type":    "password",
-  "client_id":     "...",
-  "client_secret": "...",
-  "username":      "...",
-  "password":      "...",
-  "scope":         ""
-}
-```
 
-The response carries `access_token`, `refresh_token` and `expires_in`. `refresh_token` grant is also supported, so the credential should refresh rather than re-issue on expiry.
+Dropdowns for locales, channels, families, attributes and categories are loaded
+live from the connected instance, so they always match what that PIM actually
+has.
 
-Every request then needs:
+### Use with an AI agent
 
-```
-Authorization: Bearer {access_token}
-Accept: application/json
-```
+The UnoPim node is available as a tool, so an AI Agent node can query and update
+the catalog directly — "find every product missing a description in French and
+fill it in" becomes one agent step rather than a hand-built branch.
 
-Per-route authorization is enforced by `ScopeMiddleware` against the API key's permissions (`permission_type: all`, or an explicit ACL list). A key without the matching permission returns `403 {"error":"This action is unauthorized"}`.
+## Trigger events
 
-Requests are rate limited (`throttle:rest-api`) and the token endpoint has its own throttle. Responses are `cache.headers:private;etag`, and a locale can be selected per request (`request.locale`).
+The trigger registers a webhook with UnoPim when the workflow is activated and
+removes it when the workflow is switched off. Nothing polls.
 
-## REST API surface (`{baseUrl}/api/v1/rest/...`)
+| Entity | Events |
+|---|---|
+| Product | created · updated · deleted |
+| Category | created · updated · deleted |
+| Attribute | created · updated · deleted |
+| Attribute Family | created · updated · deleted |
 
-### Catalog
+Five wildcards cover the case where a workflow cares that *something* changed
+rather than exactly what: `product.any`, `category.any`, `attribute.any`,
+`family.any` and `catalog.any`. Every payload carries `entity` and `reference`,
+so a workflow listening on `catalog.any` can tell a product from a family.
 
-| Resource | Path | Operations |
-| --- | --- | --- |
-| Products (simple) | `products` | list, get `{code}`, create, update `{code}` (PUT), patch `{sku}`, delete `{code}` |
-| Configurable products | `configurable-products` | list, get, create, update, patch, delete |
-| Categories | `categories` | list, get `{code}`, create, update, patch, delete |
-| Category fields | `category-fields` | list, get, create, update, patch, delete + options: get / create / update / delete `{optionCode}` |
-| Attributes | `attributes` | list, get `{code}`, create, update, patch, delete + options: get / create / update / delete `{optionCode}` |
-| Attribute groups | `attribute-groups` | list, get, create, update, patch, delete |
-| Attribute families | `families` | list, get, create, update, patch, delete |
-| Variant structures | `families/{code}/variant-structures` | list, get `{structureCode}`, create, update, patch, delete |
-| Association types | `association-types` | list, get, create, update, patch, delete + fields: get / create / update `{fieldCode}` / delete `{fieldCode}` |
-| Media files | `media-files/product`, `media-files/category`, `media-files/swatch` | upload (POST), get, delete |
-| Product passports | `passports` | list, get `{sku}`, publish `{sku}`, withdraw `{id}`, reinstate `{id}`, redact `{id}` |
+### Options
 
-`configrable-products` (legacy typo) is still routed but marked deprecated — nodes must use `configurable-products`.
+- **Locale** and **Channel** narrow the delivered values to one scope.
+- **Flatten Values** collapses the attribute value scopes onto one level
+  (`price__default__en_US`). It is off by default — n8n reads nested JSON
+  natively, and the nested shape is easier to walk in an expression.
+- **Signing Secret** makes UnoPim sign each delivery. A delivery whose
+  signature does not match is rejected.
 
-### Settings
+### Notes
 
-| Resource | Path | Operations |
-| --- | --- | --- |
-| Locales | `locales` | list, get, create, update, delete |
-| Channels | `channels` | list, get, create, update, delete |
-| Currencies | `currencies` | list, get, create, update, delete |
+- UnoPim writes a product row and then saves its values, so creating a product
+  through the API fires both `product.created` and `product.updated`. A
+  workflow with both triggers enabled runs twice for one new product.
+- The UnoPim side delivers on a dedicated queue. Without a queue worker running
+  on that queue, no trigger ever fires.
+- If your n8n instance is not reachable from UnoPim, deliveries fail and the
+  subscription is deactivated after several consecutive failures. It
+  reactivates by itself the next time the workflow is switched on.
 
-Most resources key on a string `code`; products additionally accept `sku` on PATCH.
+## Compatibility
 
-## Trigger node
+- n8n 1.x
+- Node.js 22 or newer
+- UnoPim 3.0 or newer
 
-UnoPim ships a first-party Webhook package (admin → Configuration → Webhook) with per-event endpoints, retry handling and delivery logs. There is no REST endpoint for managing webhooks, so the trigger node registers a manual webhook URL that the user pastes into the UnoPim admin. Delivery logs in the admin are the debugging surface.
+## Resources
 
-## Reference material
+- [n8n community nodes documentation](https://docs.n8n.io/integrations/#community-nodes)
+- [UnoPim documentation](https://docs.unopim.com/)
 
-Build:
-- Create nodes index — https://docs.n8n.io/connect/create-nodes/
-- n8n-node CLI tool — https://docs.n8n.io/connect/create-nodes/build-your-node/using-the-n8n-node-tool
-- Starter repository — https://github.com/n8n-io/n8n-nodes-starter
-- Verification guidelines — https://docs.n8n.io/connect/create-nodes/build-your-node/reference/verification-guidelines
+## License
 
-Test:
-- Run your node locally — https://docs.n8n.io/connect/create-nodes/test-your-node/run-your-node-locally
-
-Deploy:
-- Submit community nodes — https://docs.n8n.io/connect/create-nodes/deploy-your-node/submit-community-nodes
-- Creator Portal, submit a node — https://creators.n8n.io/nodes
-- npm provenance — https://docs.npmjs.com/generating-provenance-statements
-- Installing community nodes — https://docs.n8n.io/integrations/community-nodes/installation/
-
-Templates:
-- Creator hub, submit templates — https://n8n.io/creators/
-- Workflow templates — https://docs.n8n.io/workflows/templates/
-
-Prior art to model the package on:
-- https://github.com/elevenlabs/elevenlabs-n8n
-- https://www.npmjs.com/package/@elevenlabs/n8n-nodes-elevenlabs
-
-UnoPim:
-- https://github.com/unopim/unopim
-- https://docs.unopim.com
-
-## Verification checklist (n8n)
-
-- Package name matches `n8n-nodes-*` (scoped form `@unopim/n8n-nodes-unopim` is accepted).
-- `n8n-nodes-community` keyword in `package.json`, plus the `n8n` block declaring credentials and nodes.
-- No runtime dependencies beyond what the node genuinely needs; no `n8n-core`/`n8n-workflow` in `dependencies`.
-- Nodes are declarative (`routing`-based) wherever the API allows it.
-- Credential ships a `test` block so "Test connection" works in the UI.
-- Lint clean under `eslint-plugin-n8n-nodes-base`, including the `community` ruleset.
-- SVG icon, `codex` metadata file, MIT license, README with setup and operations.
-- Published to npm with provenance from a GitHub Actions workflow.
+[MIT](LICENSE)
