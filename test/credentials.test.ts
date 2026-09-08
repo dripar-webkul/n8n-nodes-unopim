@@ -23,8 +23,8 @@ describe('normaliseBaseUrl', () => {
 
 	it('accepts a sub-path installation', () => {
 		assert.equal(
-			normaliseBaseUrl('https://example.com/pim/public/'),
-			'https://example.com/pim/public',
+			normaliseBaseUrl('https://pim.example.com/pim/public/'),
+			'https://pim.example.com/pim/public',
 		);
 	});
 
@@ -50,6 +50,34 @@ describe('normaliseBaseUrl', () => {
 		assert.throws(
 			() => normaliseBaseUrl('https://pim.example.com#section'),
 			/must not contain a query string/,
+		);
+	});
+
+	it('rejects a url that points at the admin panel instead of the application root', () => {
+		assert.throws(
+			() => normaliseBaseUrl('https://pim.example.com/admin'),
+			/Remove "\/admin"/,
+		);
+	});
+
+	it('rejects the admin panel url even with a trailing slash', () => {
+		assert.throws(
+			() => normaliseBaseUrl('https://pim.example.com/admin/'),
+			/Remove "\/admin"/,
+		);
+	});
+
+	it('names the corrected url in the message so it can be pasted back', () => {
+		assert.throws(
+			() => normaliseBaseUrl('https://pim.example.com/public/admin'),
+			/https:\/\/pim\.example\.com\/public/,
+		);
+	});
+
+	it('keeps a path that merely contains the word admin', () => {
+		assert.equal(
+			normaliseBaseUrl('https://pim.example.com/administrator'),
+			'https://pim.example.com/administrator',
 		);
 	});
 

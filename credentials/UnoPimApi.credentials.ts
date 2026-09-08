@@ -157,5 +157,12 @@ export function normaliseBaseUrl(baseUrl: string): string {
 		);
 	}
 
+	if (/\/admin$/i.test(url.pathname)) {
+		throw new Error(
+			'Remove "/admin" from the end of the UnoPim URL. This field takes the application root, ' +
+				`for example ${trimmed.replace(/\/admin$/i, '') || 'https://pim.example.com'}, not the admin panel address.`,
+		);
+	}
+
 	return trimmed;
 }
