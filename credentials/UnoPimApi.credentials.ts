@@ -27,7 +27,7 @@ export class UnoPimApi implements ICredentialType {
 			name: 'baseUrl',
 			type: 'string',
 			default: '',
-			placeholder: 'https://pim.example.com',
+			placeholder: 'https://demo.unopim.com',
 			required: true,
 			description: 'Root URL of your UnoPim instance, without a trailing slash',
 		},
@@ -153,14 +153,14 @@ export function normaliseBaseUrl(baseUrl: string): string {
 
 	if (url.search || url.hash) {
 		throw new Error(
-			'The UnoPim URL must not contain a query string or fragment. Use just the address, for example https://pim.example.com.',
+			'The UnoPim URL must not contain a query string or fragment. Use just the address, for example https://demo.unopim.com.',
 		);
 	}
 
 	if (/\/admin$/i.test(url.pathname)) {
 		throw new Error(
 			'Remove "/admin" from the end of the UnoPim URL. This field takes the application root, ' +
-				`for example ${trimmed.replace(/\/admin$/i, '') || 'https://pim.example.com'}, not the admin panel address.`,
+				`for example ${trimmed.replace(/\/admin$/i, '') || 'https://demo.unopim.com'}, not the admin panel address.`,
 		);
 	}
 

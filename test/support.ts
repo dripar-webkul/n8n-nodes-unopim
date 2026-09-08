@@ -41,7 +41,7 @@ export function fakeContext(options: FakeContextOptions = {}) {
 		getNode: () => ({ name: 'UnoPim', type: 'n8n-nodes-unopim.unoPim' }),
 		async getCredentials() {
 			return {
-				baseUrl: options.baseUrl ?? 'https://pim.example.com',
+				baseUrl: options.baseUrl ?? 'https://demo.unopim.com',
 				clientId,
 				clientSecret: 'secret',
 				username: 'integration+1@api.local',

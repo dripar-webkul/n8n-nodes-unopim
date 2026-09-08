@@ -32,7 +32,8 @@
         "test": "npm run build && node --test \"test/**/*.test.ts\""
     },
     "files": [
-        "dist"
+        "dist",
+        "CHANGELOG.md"
     ],
     "n8n": {
         "n8nNodesApiVersion": 1,

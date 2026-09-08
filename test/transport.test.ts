@@ -19,7 +19,7 @@ describe('access token', () => {
 		const { token } = await accessToken(context);
 
 		assert.equal(token, 'abc');
-		assert.equal(context.calls[0].url, 'https://pim.example.com/oauth/token');
+		assert.equal(context.calls[0].url, 'https://demo.unopim.com/oauth/token');
 	});
 
 	it('sends the token request form encoded because Passport reads the parsed body', async () => {
@@ -87,13 +87,13 @@ describe('access token', () => {
 
 	it('normalises a base url carrying a trailing slash', async () => {
 		const context = fakeContext({
-			baseUrl: 'https://pim.example.com/',
+			baseUrl: 'https://demo.unopim.com/',
 			responses: [tokenResponse()],
 		});
 
 		const { baseUrl } = await accessToken(context);
 
-		assert.equal(baseUrl, 'https://pim.example.com');
+		assert.equal(baseUrl, 'https://demo.unopim.com');
 	});
 
 	it('explains itself when no token comes back', async () => {
@@ -111,7 +111,7 @@ describe('api request', () => {
 
 		const request = context.calls[1];
 
-		assert.equal(request.url, 'https://pim.example.com/api/v1/rest/products');
+		assert.equal(request.url, 'https://demo.unopim.com/api/v1/rest/products');
 		assert.equal(request.headers?.Authorization, 'Bearer bearer-1');
 	});
 
