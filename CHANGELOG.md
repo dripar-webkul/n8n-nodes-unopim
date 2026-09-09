@@ -10,9 +10,16 @@ has to be written by hand.
 
 | Version | Date | n8n | Node.js | UnoPim | UnoPim connector package |
 |---|---|---|---|---|---|
-| 1.0.0 | not yet published | 1.x and 2.x, tested on 2.36.7 | 22 or newer | 3.0 or newer | `webkul/n8n` 1.0.0 |
+| 1.0.1 | 2026-09-09 | 1.x and 2.x, tested on 2.36.7 | 22 or newer | 3.0 or newer | `webkul/n8n` 1.0.0 |
+| 1.0.0 | 2026-09-09 | 1.x and 2.x, tested on 2.36.7 | 22 or newer | 3.0 or newer | `webkul/n8n` 1.0.0 |
 
-## 1.0.0 (not yet published)
+## 1.0.1 (2026-09-09)
+
+### Changed
+
+- Updated publish workflow for npm OIDC trusted publishing with provenance.
+
+## 1.0.0 (2026-09-09)
 
 First release. Two nodes and one credential, published as a community node
 package.
