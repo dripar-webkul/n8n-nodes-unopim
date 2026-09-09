@@ -1,0 +1,14 @@
+{
+    "node": "n8n-nodes-unopim.unoPim",
+    "nodeVersion": "1.0",
+    "codexVersion": "1.0",
+    "categories": ["Data & Storage", "Marketing"],
+    "resources": {
+        "credentialDocumentation": [
+            { "url": "https://docs.unopim.com/" }
+        ],
+        "primaryDocumentation": [
+            { "url": "https://github.com/unopim/n8n-nodes-unopim" }
+        ]
+    }
+}
