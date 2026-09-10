@@ -1,6 +1,6 @@
 {
     "name": "n8n-nodes-unopim",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "description": "n8n node for UnoPim \u2014 the open-source PIM. Read and write the catalog, and trigger workflows on catalog changes.",
     "license": "MIT",
     "homepage": "https://unopim.com",
@@ -12,7 +12,8 @@
         "catalog"
     ],
     "author": {
-        "name": "Webkul"
+        "name": "Webkul",
+        "email": "support@unopim.com"
     },
     "repository": {
         "type": "git",
