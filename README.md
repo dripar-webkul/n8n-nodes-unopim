@@ -1,5 +1,7 @@
 # n8n-nodes-unopim
 
+[![npm version](https://badge.fury.io/js/n8n-nodes-unopim.svg)](https://www.npmjs.com/package/n8n-nodes-unopim)
+
 n8n community nodes for [UnoPim](https://unopim.com), the open-source Product
 Information Management system.
 
@@ -10,16 +12,16 @@ Two nodes ship in this package:
 | **UnoPim** | Reads and writes the catalog — products, categories, attributes, families and settings |
 | **UnoPim Trigger** | Starts a workflow the moment the catalog changes |
 
-[Installation](#installation) · [Credentials](#credentials) · [Operations](#operations) · [Trigger events](#trigger-events) · [Compatibility](#compatibility)
+[Installation](#installation) · [Credentials](#credentials) · [Operations](#operations) · [Trigger events](#trigger-events) · [Compatibility](#compatibility) · [Resources](#resources) · [Changelog](#changelog)
 
 ## Installation
 
 Follow the
 [community nodes installation guide](https://docs.n8n.io/integrations/community-nodes/installation/)
-and install `n8n-nodes-unopim`.
+and install [`n8n-nodes-unopim`](https://www.npmjs.com/package/n8n-nodes-unopim) from npm.
 
 The trigger node also needs the UnoPim side of the connector installed on your
-PIM. See [the connector package](https://github.com/unopim/unopim-n8n) for that
+PIM. See [UnoPim documentation](https://docs.unopim.com/) for that
 half. The action node works against a stock UnoPim install with no extra
 package.
 
@@ -126,6 +128,7 @@ Release history is in [CHANGELOG.md](CHANGELOG.md).
 
 ## Resources
 
+- [npm package](https://www.npmjs.com/package/n8n-nodes-unopim)
 - [n8n community nodes documentation](https://docs.n8n.io/integrations/#community-nodes)
 - [UnoPim documentation](https://docs.unopim.com/)
 

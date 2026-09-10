@@ -200,7 +200,8 @@ export class UnoPimTrigger implements INodeType {
 						'DELETE',
 						`/n8n/subscriptions/${staticData.subscriptionId}`,
 					);
-				} catch {
+				} catch (error) {
+					this.logger.error('Failed to delete UnoPim webhook subscription', { error });
 					return false;
 				}
 
