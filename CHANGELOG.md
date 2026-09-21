@@ -10,9 +10,23 @@ has to be written by hand.
 
 | Version | Date | n8n | Node.js | UnoPim | UnoPim connector package |
 |---|---|---|---|---|---|
+| 1.0.3 | 2026-09-21 | 1.x and 2.x, tested on 2.36.7 | 22 or newer | 3.0 or newer | `webkul/n8n` 1.0.0 |
 | 1.0.2 | 2026-09-10 | 1.x and 2.x, tested on 2.36.7 | 22 or newer | 3.0 or newer | `webkul/n8n` 1.0.0 |
 | 1.0.1 | 2026-09-09 | 1.x and 2.x, tested on 2.36.7 | 22 or newer | 3.0 or newer | `webkul/n8n` 1.0.0 |
 | 1.0.0 | 2026-09-09 | 1.x and 2.x, tested on 2.36.7 | 22 or newer | 3.0 or newer | `webkul/n8n` 1.0.0 |
+
+## 1.0.3 (2026-09-21)
+
+### Fixed
+
+- Use the documented codex category `Marketing & Content` instead of `Marketing`
+  in both node codex files, so the nodes land in the right section of the nodes
+  panel. Raised by the n8n node package review.
+
+### Changed
+
+- Mark the UnoPim session token as `expirable`, so n8n refreshes it instead of
+  failing a request once it has expired.
 
 ## 1.0.2 (2026-09-10)
 
