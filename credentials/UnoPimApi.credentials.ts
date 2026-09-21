@@ -72,7 +72,7 @@ export class UnoPimApi implements ICredentialType {
 			displayName: 'Session Token',
 			name: 'sessionToken',
 			type: 'hidden',
-			typeOptions: { password: true },
+			typeOptions: { password: true, expirable: true },
 			default: '',
 		},
 	];
