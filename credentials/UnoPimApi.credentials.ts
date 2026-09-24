@@ -7,6 +7,11 @@ import type {
 	INodeProperties,
 } from 'n8n-workflow';
 
+import {
+	INTEGRATION_NOT_INSTALLED,
+	INTEGRATION_NOT_INSTALLED_HINT,
+} from '../nodes/UnoPim/transport';
+
 const REJECTED =
 	'Those credentials were rejected. Copy all four values from the same row under ' +
 	'Configuration > Integrations > API Keys. The Username is the generated API username ' +
@@ -133,6 +138,15 @@ export class UnoPimApi implements ICredentialType {
 			baseURL: '={{$credentials.baseUrl.replace(/\\/+$/, "")}}',
 			url: '/api/v1/rest/n8n/me',
 		},
+		rules: [
+			{
+				type: 'responseCode',
+				properties: {
+					value: 404,
+					message: `${INTEGRATION_NOT_INSTALLED} ${INTEGRATION_NOT_INSTALLED_HINT}`,
+				},
+			},
+		],
 	};
 }
 

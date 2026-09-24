@@ -10,10 +10,25 @@ has to be written by hand.
 
 | Version | Date | n8n | Node.js | UnoPim | UnoPim connector package |
 |---|---|---|---|---|---|
+| 1.0.4 | 2026-09-24 | 1.x and 2.x, tested on 2.36.7 | 22 or newer | 3.0 or newer | `webkul/n8n` 1.0.0 |
 | 1.0.3 | 2026-09-21 | 1.x and 2.x, tested on 2.36.7 | 22 or newer | 3.0 or newer | `webkul/n8n` 1.0.0 |
 | 1.0.2 | 2026-09-10 | 1.x and 2.x, tested on 2.36.7 | 22 or newer | 3.0 or newer | `webkul/n8n` 1.0.0 |
 | 1.0.1 | 2026-09-09 | 1.x and 2.x, tested on 2.36.7 | 22 or newer | 3.0 or newer | `webkul/n8n` 1.0.0 |
 | 1.0.0 | 2026-09-09 | 1.x and 2.x, tested on 2.36.7 | 22 or newer | 3.0 or newer | `webkul/n8n` 1.0.0 |
+
+## 1.0.4 (2026-09-24)
+
+### Fixed
+
+- Say plainly when the UnoPim n8n connector package is missing. A 404 from a
+  `/n8n/` endpoint now raises "UnoPim n8n Integration is not installed or
+  enabled on this UnoPim instance." with the install instructions and a link to
+  https://docs-extensions.unopim.com/n8n/, instead of n8n's generic "The
+  resource you are requesting could not be found". The credential test reports
+  the same thing rather than "Received HTTP status code: 404", which previously
+  looked like bad credentials even though the token request had succeeded.
+  Catalog operations run against the core UnoPim API and are unaffected, so only
+  the trigger and the credential test were misreporting this.
 
 ## 1.0.3 (2026-09-21)
 

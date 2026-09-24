@@ -8,7 +8,7 @@ import type {
 	IHttpRequestOptions,
 	IWebhookFunctions,
 } from 'n8n-workflow';
-import { NodeApiError } from 'n8n-workflow';
+import { NodeApiError, NodeOperationError } from 'n8n-workflow';
 
 export type UnoPimContext =
 	| IExecuteFunctions
@@ -18,6 +18,32 @@ export type UnoPimContext =
 	| IWebhookFunctions;
 
 export const MAX_PAGE_SIZE = 100;
+
+export const INTEGRATION_NOT_INSTALLED =
+	'UnoPim n8n Integration is not installed or enabled on this UnoPim instance.';
+
+export const INTEGRATION_NOT_INSTALLED_HINT =
+	'Please ask your UnoPim administrator to install and activate the n8n Integration extension, ' +
+	'then try connecting again. Learn more: https://docs-extensions.unopim.com/n8n/';
+
+const PLATFORM_PREFIX = '/n8n/';
+
+function statusCodeOf(error: unknown): number | undefined {
+	const source = error as {
+		statusCode?: number;
+		httpCode?: number | string;
+		response?: { status?: number };
+		cause?: { response?: { status?: number } };
+	};
+
+	const code =
+		source?.statusCode ??
+		source?.response?.status ??
+		source?.cause?.response?.status ??
+		source?.httpCode;
+
+	return code === undefined ? undefined : Number(code);
+}
 
 export interface UnoPimListResponse {
 	data?: IDataObject[];
@@ -114,19 +140,31 @@ export async function unopimApiRequest(
 		return (await this.helpers.httpRequest(options)) as IDataObject;
 	};
 
+	const fail = (error: unknown): never => {
+		if (endpoint.startsWith(PLATFORM_PREFIX) && statusCodeOf(error) === 404) {
+			throw new NodeOperationError(this.getNode(), INTEGRATION_NOT_INSTALLED, {
+				description: INTEGRATION_NOT_INSTALLED_HINT,
+			});
+		}
+
+		throw new NodeApiError(this.getNode(), error as never);
+	};
+
 	try {
 		return await send(false);
 	} catch (error) {
-		if ((error as { statusCode?: number }).statusCode !== 401) {
-			throw new NodeApiError(this.getNode(), error as never);
+		if (statusCodeOf(error) !== 401) {
+			fail(error);
 		}
 	}
 
 	try {
 		return await send(true);
 	} catch (error) {
-		throw new NodeApiError(this.getNode(), error as never);
+		fail(error);
 	}
+
+	throw new NodeOperationError(this.getNode(), 'UnoPim request failed without a response.');
 }
 
 export async function unopimApiRequestAllItems(
