@@ -24,7 +24,7 @@ export const INTEGRATION_NOT_INSTALLED =
 
 export const INTEGRATION_NOT_INSTALLED_HINT =
 	'Please ask your UnoPim administrator to install and activate the n8n Integration extension, ' +
-	'then try connecting again. Learn more: https://docs-extensions.unopim.com/n8n/';
+	'then try connecting again. Learn more: https://store.webkul.com/unopim-n8n-connector.html';
 
 const PLATFORM_PREFIX = '/n8n/';
 

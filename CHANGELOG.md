@@ -23,7 +23,7 @@ has to be written by hand.
 - Say plainly when the UnoPim n8n connector package is missing. A 404 from a
   `/n8n/` endpoint now raises "UnoPim n8n Integration is not installed or
   enabled on this UnoPim instance." with the install instructions and a link to
-  https://docs-extensions.unopim.com/n8n/, instead of n8n's generic "The
+  https://store.webkul.com/unopim-n8n-connector.html, instead of n8n's generic "The
   resource you are requesting could not be found". The credential test reports
   the same thing rather than "Received HTTP status code: 404", which previously
   looked like bad credentials even though the token request had succeeded.
