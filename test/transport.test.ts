@@ -3,6 +3,7 @@ import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
 import {
+	INTEGRATION_NOT_INSTALLED,
 	MAX_PAGE_SIZE,
 	accessToken,
 	unopimApiRequest,
@@ -10,7 +11,7 @@ import {
 	unopimApiRequestLimited,
 } from '../dist/nodes/UnoPim/transport/index.js';
 
-import { fakeContext, httpError, page, tokenResponse } from './support.ts';
+import { fakeContext, httpError, httpErrorWithBody, page, tokenResponse } from './support.ts';
 
 describe('access token', () => {
 	it('exchanges the api key values for a bearer token', async () => {
@@ -155,6 +156,82 @@ describe('api request', () => {
 		await assert.rejects(unopimApiRequest.call(context, 'GET', '/products'));
 	});
 
+	it('shows the message UnoPim gave for a rejected request', async () => {
+		const errors = { immutable: ['The following fields cannot be modified: code.'] };
+
+		const context = fakeContext({
+			responses: [
+				tokenResponse(),
+				httpErrorWithBody(422, { success: false, message: 'Validation failed.', errors }),
+			],
+		});
+
+		await assert.rejects(
+			unopimApiRequest.call(context, 'PUT', '/association-types/upsell', { code: 'x' }),
+			(error: Error & { description?: string; httpCode?: string }) => {
+				assert.equal(
+					error.message,
+					'Validation failed. The following fields cannot be modified: code.',
+				);
+				assert.equal(error.description, JSON.stringify(errors));
+				assert.equal(error.httpCode, '422');
+
+				return true;
+			},
+		);
+	});
+
+	it('lists every field error so a continue on fail item says what to fix', async () => {
+		const context = fakeContext({
+			responses: [
+				tokenResponse(),
+				httpErrorWithBody(422, {
+					message: 'Validation failed.',
+					errors: {
+						family: ['The family field is required.'],
+						'values.common.sku': ['The values.common.sku field is required.'],
+					},
+				}),
+			],
+		});
+
+		await assert.rejects(unopimApiRequest.call(context, 'POST', '/products', { parent: null }), {
+			message:
+				'Validation failed. The family field is required. The values.common.sku field is required.',
+		});
+	});
+
+	it('reads the message from a response body that arrived as text', async () => {
+		const context = fakeContext({
+			responses: [
+				tokenResponse(),
+				httpErrorWithBody(422, JSON.stringify({ message: 'The sku has already been taken.' })),
+			],
+		});
+
+		await assert.rejects(unopimApiRequest.call(context, 'POST', '/products', { sku: 'dup' }), {
+			message: 'The sku has already been taken.',
+		});
+	});
+
+	it('keeps the generic message when UnoPim gave none', async () => {
+		const context = fakeContext({ responses: [tokenResponse(), httpErrorWithBody(422, {})] });
+
+		await assert.rejects(unopimApiRequest.call(context, 'POST', '/products', { sku: '' }), {
+			message: 'Your request is invalid or could not be processed by the service',
+		});
+	});
+
+	it('still reports a missing connector on a platform 404 that carries a message', async () => {
+		const context = fakeContext({
+			responses: [tokenResponse(), httpErrorWithBody(404, { message: 'Not Found' })],
+		});
+
+		await assert.rejects(unopimApiRequest.call(context, 'GET', '/n8n/subscriptions'), {
+			message: INTEGRATION_NOT_INSTALLED,
+		});
+	});
+
 	it('does not retry a failure that is not an authentication problem', async () => {
 		const context = fakeContext({ responses: [tokenResponse(), httpError(422)] });
 
@@ -192,6 +269,39 @@ describe('pagination', () => {
 		await unopimApiRequestAllItems.call(context, '/products');
 
 		assert.equal(context.calls[2].qs?.search_after, MAX_PAGE_SIZE);
+	});
+
+	it('follows the cursor the server returns, because UnoPim rows carry no id', async () => {
+		const rows = (size: number) => Array.from({ length: size }, (_, index) => ({ code: `c${index}` }));
+		const context = fakeContext({
+			responses: [
+				tokenResponse(),
+				{ data: rows(MAX_PAGE_SIZE), search_after: 554 },
+				{ data: rows(MAX_PAGE_SIZE), search_after: 812 },
+				{ data: rows(12), search_after: null },
+			],
+		});
+
+		const items = await unopimApiRequestAllItems.call(context, '/locales');
+
+		assert.equal(items.length, MAX_PAGE_SIZE * 2 + 12);
+		assert.equal(context.calls.length, 4);
+		assert.equal(context.calls[3].qs?.search_after, 812);
+	});
+
+	it('stops when the server hands back the cursor it was given', async () => {
+		const context = fakeContext({
+			responses: [
+				tokenResponse(),
+				{ data: page(MAX_PAGE_SIZE, 1).data, search_after: 7 },
+				{ data: page(MAX_PAGE_SIZE, 1).data, search_after: 7 },
+			],
+		});
+
+		const items = await unopimApiRequestAllItems.call(context, '/products');
+
+		assert.equal(items.length, MAX_PAGE_SIZE * 2);
+		assert.equal(context.calls.length, 3);
 	});
 
 	it('stops at the requested limit', async () => {
