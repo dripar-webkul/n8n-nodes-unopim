@@ -24,6 +24,7 @@ has to be written by hand.
 - Return All now returns every record, not just the first 100.
 - Activating a workflow switches its subscription back on after failed deliveries.
 - A wrong or missing signature gets HTTP 401 and no longer starts the workflow.
+- Signed deliveries are no longer wrongly rejected as an invalid signature.
 - Errors show UnoPim's own message instead of n8n's generic one.
 
 ## 1.0.4 (2026-09-28)

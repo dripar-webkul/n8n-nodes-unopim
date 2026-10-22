@@ -102,7 +102,7 @@ describe('checkExists', () => {
 describe('webhook', () => {
 	const BODY_DATA = { sku: 'SKU-1' };
 
-	function webhookContext(secret: string | undefined, signature?: string) {
+	function webhookContext(secret: string | undefined, signature?: string, rawBody?: Buffer) {
 		const response: { statusCode?: number; payload?: unknown } = {};
 
 		const res = {
@@ -124,6 +124,7 @@ describe('webhook', () => {
 				getNodeParameter: () => (secret === undefined ? {} : { secret }),
 				getBodyData: () => BODY_DATA,
 				getHeaderData: () => (signature === undefined ? {} : { 'x-unopim-signature': signature }),
+				getRequestObject: () => ({ rawBody }),
 				getResponseObject: () => res,
 				getNode: () => ({ name: 'UnoPim Trigger' }),
 				helpers: { returnJsonArray: (data: IDataObject) => [{ json: data }] },
@@ -159,6 +160,27 @@ describe('webhook', () => {
 
 		assert.deepEqual(result.workflowData, [[{ json: BODY_DATA }]]);
 		assert.equal(response.statusCode, undefined);
+	});
+
+	it('verifies the raw body UnoPim signed, not a re-serialized copy', async () => {
+		const raw = Buffer.from('{"sku":"SKU-1","description":"<p>Caf\\u00e9 cap<\\/p>"}');
+
+		const { context, response } = webhookContext(SECRET, sign(raw.toString(), SECRET), raw);
+
+		const result = await webhook.call(context as never);
+
+		assert.equal(response.statusCode, undefined);
+		assert.deepEqual(result.workflowData, [[{ json: BODY_DATA }]]);
+	});
+
+	it('rejects a raw body that was changed after signing', async () => {
+		const raw = Buffer.from('{"sku":"SKU-1"}');
+
+		const { context, response } = webhookContext(SECRET, sign('{"sku":"SKU-2"}', SECRET), raw);
+
+		await webhook.call(context as never);
+
+		assert.equal(response.statusCode, 401);
 	});
 
 	it('starts the workflow without checking when no secret is set', async () => {

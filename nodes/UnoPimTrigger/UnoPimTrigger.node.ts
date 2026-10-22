@@ -229,7 +229,7 @@ export class UnoPimTrigger implements INodeType {
 		if (secret) {
 			const signature = this.getHeaderData()['x-unopim-signature'] as string | undefined;
 
-			if (!isSignatureValid(JSON.stringify(body), secret, signature)) {
+			if (!isSignatureValid(signedPayload(this.getRequestObject().rawBody, body), secret, signature)) {
 				this.getResponseObject().status(401).json({ message: 'Invalid signature' });
 
 				return { noWebhookResponse: true };
@@ -240,6 +240,18 @@ export class UnoPimTrigger implements INodeType {
 			workflowData: [this.helpers.returnJsonArray(body)],
 		};
 	}
+}
+
+export function signedPayload(rawBody: unknown, body: IDataObject): string {
+	if (Buffer.isBuffer(rawBody)) {
+		return rawBody.toString('utf8');
+	}
+
+	if (typeof rawBody === 'string') {
+		return rawBody;
+	}
+
+	return JSON.stringify(body);
 }
 
 export function isSignatureValid(
