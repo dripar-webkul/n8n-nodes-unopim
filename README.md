@@ -113,12 +113,16 @@ so a workflow listening on `catalog.any` can tell a product from a family.
 - The UnoPim side delivers on a dedicated queue. Without a queue worker running
   on that queue, no trigger ever fires.
 - If your n8n instance is not reachable from UnoPim, deliveries fail and the
-  subscription is deactivated after several consecutive failures. It
-  reactivates by itself the next time the workflow is switched on.
+  subscription is deactivated after several consecutive failures. Restarting
+  n8n does not bring it back. UnoPim switches it back on after a cool-down
+  (15 minutes by default) when its scheduler is running, or you can switch
+  the workflow off and on to bring it back at once.
+- A signed trigger answers a missing or wrong signature with HTTP 401 and does
+  not start the workflow.
 
 ## Compatibility
 
-- n8n 1.x and 2.x, tested on 2.36.7
+- n8n 1.x and 2.x, tested on 2.36.7 and 2.44.4
 - Node.js 22 or newer
 - UnoPim 3.0 or newer
 

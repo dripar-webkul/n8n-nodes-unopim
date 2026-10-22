@@ -45,11 +45,80 @@ function statusCodeOf(error: unknown): number | undefined {
 	return code === undefined ? undefined : Number(code);
 }
 
+function responseBodyOf(error: unknown): IDataObject | undefined {
+	const source = error as {
+		response?: { data?: unknown; body?: unknown };
+		cause?: { response?: { data?: unknown; body?: unknown } };
+		error?: unknown;
+	};
+
+	const raw =
+		source?.response?.data ??
+		source?.response?.body ??
+		source?.cause?.response?.data ??
+		source?.cause?.response?.body ??
+		source?.error;
+
+	if (typeof raw === 'string') {
+		try {
+			const parsed = JSON.parse(raw) as unknown;
+
+			return parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)
+				? (parsed as IDataObject)
+				: undefined;
+		} catch {
+			return undefined;
+		}
+	}
+
+	return raw !== null && typeof raw === 'object' && !Array.isArray(raw)
+		? (raw as IDataObject)
+		: undefined;
+}
+
+function errorLines(errors: unknown): string[] {
+	if (typeof errors === 'string') {
+		return errors.trim() === '' ? [] : [errors.trim()];
+	}
+
+	if (errors !== null && typeof errors === 'object') {
+		return Object.values(errors).flatMap((value) => errorLines(value));
+	}
+
+	return [];
+}
+
+function toApiError(context: UnoPimContext, error: unknown): NodeApiError {
+	const body = responseBodyOf(error);
+
+	const summary = typeof body?.message === 'string' ? body.message.trim() : '';
+
+	const details = errorLines(body?.errors).filter((line) => line !== summary);
+
+	const message = [summary, ...details].filter((part) => part !== '').join(' ');
+
+	if (message === '') {
+		return new NodeApiError(context.getNode(), error as never);
+	}
+
+	const statusCode = statusCodeOf(error);
+
+	const apiError = new NodeApiError(context.getNode(), error as never, {
+		message,
+		httpCode: statusCode === undefined ? undefined : String(statusCode),
+	});
+
+	apiError.description = body?.errors === undefined ? undefined : JSON.stringify(body.errors);
+
+	return apiError;
+}
+
 export interface UnoPimListResponse {
 	data?: IDataObject[];
 	current_page?: number;
 	last_page?: number;
 	total?: number;
+	search_after?: string | number | null;
 }
 
 interface CachedToken {
@@ -147,7 +216,7 @@ export async function unopimApiRequest(
 			});
 		}
 
-		throw new NodeApiError(this.getNode(), error as never);
+		throw toApiError(this, error);
 	};
 
 	try {
@@ -199,10 +268,29 @@ export async function unopimApiRequestAllItems(
 
 		items.push(...page);
 
-		searchAfter = page.length === MAX_PAGE_SIZE ? page[page.length - 1]?.id : undefined;
+		searchAfter = nextCursor(response, page, searchAfter);
 	} while (searchAfter !== undefined);
 
 	return items;
+}
+
+function nextCursor(
+	response: UnoPimListResponse,
+	page: IDataObject[],
+	previous: unknown,
+): unknown {
+	if (page.length === 0) {
+		return undefined;
+	}
+
+	const cursor =
+		response.search_after ?? (page.length === MAX_PAGE_SIZE ? page[page.length - 1]?.id : undefined);
+
+	if (cursor === null || cursor === undefined || cursor === previous) {
+		return undefined;
+	}
+
+	return cursor;
 }
 
 export async function unopimApiRequestLimited(

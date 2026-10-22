@@ -70,3 +70,15 @@ export function page(size: number, startId: number) {
 		data: Array.from({ length: size }, (_, index) => ({ id: startId + index })),
 	};
 }
+
+export function httpErrorWithBody(statusCode: number, data: unknown) {
+	return () => {
+		const error = new Error(`HTTP ${statusCode}`) as Error & {
+			response: { status: number; data: unknown };
+		};
+
+		error.response = { status: statusCode, data };
+
+		throw error;
+	};
+}

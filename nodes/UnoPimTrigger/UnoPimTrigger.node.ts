@@ -10,7 +10,7 @@ import type {
 	IWebhookFunctions,
 	IWebhookResponseData,
 } from 'n8n-workflow';
-import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
+import { NodeConnectionTypes } from 'n8n-workflow';
 
 import * as loadOptions from '../UnoPim/methods/loadOptions';
 import { unopimApiRequest } from '../UnoPim/transport';
@@ -18,6 +18,7 @@ import { unopimApiRequest } from '../UnoPim/transport';
 interface Subscription extends IDataObject {
 	id: number;
 	target_url: string;
+	is_active: boolean;
 }
 
 // eslint-disable-next-line @n8n/community-nodes/node-usable-as-tool -- a trigger starts a workflow; an agent cannot call it as a tool
@@ -129,12 +130,18 @@ export class UnoPimTrigger implements INodeType {
 				const webhookUrl = this.getNodeWebhookUrl('default') as string;
 				const staticData = this.getWorkflowStaticData('node');
 
-				const response = await unopimApiRequest.call(this, 'GET', '/n8n/subscriptions');
+				const response = await unopimApiRequest.call(
+					this,
+					'GET',
+					'/n8n/subscriptions',
+					{},
+					{ limit: 100 },
+				);
 
 				const subscriptions = (response.data as Subscription[]) ?? [];
 
 				const match = subscriptions.find(
-					(subscription) => subscription.target_url === webhookUrl,
+					(subscription) => subscription.target_url === webhookUrl && subscription.is_active,
 				);
 
 				if (!match) {
@@ -222,11 +229,10 @@ export class UnoPimTrigger implements INodeType {
 		if (secret) {
 			const signature = this.getHeaderData()['x-unopim-signature'] as string | undefined;
 
-			if (!isSignatureValid(JSON.stringify(body), secret, signature)) {
-				throw new NodeOperationError(
-					this.getNode(),
-					'The delivery signature did not match the signing secret. Check that the same secret is set on both sides.',
-				);
+			if (!isSignatureValid(signedPayload(this.getRequestObject().rawBody, body), secret, signature)) {
+				this.getResponseObject().status(401).json({ message: 'Invalid signature' });
+
+				return { noWebhookResponse: true };
 			}
 		}
 
@@ -234,6 +240,18 @@ export class UnoPimTrigger implements INodeType {
 			workflowData: [this.helpers.returnJsonArray(body)],
 		};
 	}
+}
+
+export function signedPayload(rawBody: unknown, body: IDataObject): string {
+	if (Buffer.isBuffer(rawBody)) {
+		return rawBody.toString('utf8');
+	}
+
+	if (typeof rawBody === 'string') {
+		return rawBody;
+	}
+
+	return JSON.stringify(body);
 }
 
 export function isSignatureValid(
